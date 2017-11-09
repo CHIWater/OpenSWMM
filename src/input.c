@@ -25,6 +25,7 @@
 #include <math.h>
 #include "headers.h"
 #include "lid.h"
+#include "Seasonal.h"                                                          //(OPENSWMM 5.1.911)
 
 //-----------------------------------------------------------------------------
 //  Constants
@@ -597,6 +598,9 @@ int  parseLine(int sect, char *line)
 
       case s_EVENT:
         return readEvent(Tok, Ntokens);                                        //(5.1.011)
+
+	  case s_Seasonal:
+		  return seasonal_readParams(Tok, Ntokens);	                           //(OPENSWMM 5.1.911)
 
       default: return 0;
     }

@@ -179,6 +179,7 @@ int  stats_open()
         LinkStats[j].maxFlow = 0.0;
         LinkStats[j].maxVeloc = 0.0;
         LinkStats[j].maxDepth = 0.0;
+		LinkStats[j].maxVolume = 0.0;						// (OPENSWMM 5.1.911)
         LinkStats[j].timeSurcharged = 0.0;
         LinkStats[j].timeFullUpstream = 0.0;
         LinkStats[j].timeFullDnstream = 0.0;
@@ -615,6 +616,12 @@ void  stats_updateLinkStats(int j, double tStep, DateTime aDate)
     {
         LinkStats[j].maxDepth = Link[j].newDepth;
     }
+
+	// --- update max. volume
+	if (Link[j].newVolume > LinkStats[j].maxVolume)					// (OPENSWMM 5.1.911)
+	{																// (OPENSWMM 5.1.911)
+		LinkStats[j].maxVolume = Link[j].newVolume;					// (OPENSWMM 5.1.911)
+	}
 
     if ( Link[j].type == PUMP )
     {

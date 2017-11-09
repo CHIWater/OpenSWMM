@@ -521,6 +521,9 @@ typedef struct
    double*       newQual;         // current quality state
    double        oldFlowInflow;   // previous flow inflow
    double        oldNetInflow;    // previous net inflow
+   double        oldWaterAge;     // previous water age (OPENSWMM 5.1.912)
+   double        newWaterAge;     // current water age  (OPENSWMM 5.1.912)
+   double        linkWaterAgeLoading;    // water age loading from upstream links  (OPENSWMM 5.1.912)
 }  TNode;
 
 
@@ -684,6 +687,8 @@ typedef struct
    char          bypassed;        // bypass dynwave calc. flag
    char          normalFlow;      // normal flow limited flag
    char          inletControl;    // culvert inlet control flag
+   double        oldWaterAge;     // previous water age (OPENSWMM 5.1.912)
+   double        newWaterAge;     // current water age  (OPENSWMM 5.1.912)
 }  TLink;
 
 
@@ -1047,6 +1052,7 @@ typedef struct
    double        maxVeloc;
    //DateTime      maxVelocDate;  //deprecated                                 //(5.1.008)
    double        maxDepth;
+   double		 maxVolume;							// (OPENSWMM 5.1.911)
    double        timeNormalFlow;
    double        timeInletControl;
    double        timeSurcharged;

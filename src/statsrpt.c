@@ -686,7 +686,7 @@ void writeLinkFlows()
 //
 {
     int    j, k, days, hrs, mins;
-    double v, fullDepth;
+	double v, fullDepth, maxVolume;													// (OPENSWMM 5.1.911)
 
     if ( Nobjects[LINK] == 0 ) return;
     WRITE("");
@@ -696,17 +696,17 @@ void writeLinkFlows()
     WRITE("");
 
     fprintf(Frpt.file,
-"\n  -----------------------------------------------------------------------------"
-"\n                                 Maximum  Time of Max   Maximum    Max/    Max/"
-"\n                                  |Flow|   Occurrence   |Veloc|    Full    Full");
-    if ( UnitSystem == US ) fprintf(Frpt.file,
-"\n  Link                 Type          %3s  days hr:min    ft/sec    Flow   Depth",
-        FlowUnitWords[FlowUnits]);
-    else fprintf(Frpt.file, 
-"\n  Link                 Type          %3s  days hr:min     m/sec    Flow   Depth",
-        FlowUnitWords[FlowUnits]);
-    fprintf(Frpt.file,
-"\n  -----------------------------------------------------------------------------");
+		"\n  ----------------------------------------------------------------------------------------"		// (OPENSWMM 5.1.911)
+		"\n                                 Maximum  Time of Max   Maximum    Max/    Max/    Maximum"		// (OPENSWMM 5.1.911)
+		"\n                                  |Flow|   Occurrence   |Veloc|    Full    Full     Volume");	// (OPENSWMM 5.1.911)
+	if (UnitSystem == US) fprintf(Frpt.file,																// (OPENSWMM 5.1.911)
+		"\n  Link                 Type          %3s  days hr:min    ft/sec    Flow   Depth        ft3",		// (OPENSWMM 5.1.911)
+		FlowUnitWords[FlowUnits]);																			// (OPENSWMM 5.1.911)
+	else fprintf(Frpt.file, 																				// (OPENSWMM 5.1.911)
+		"\n  Link                 Type          %3s  days hr:min     m/sec    Flow   Depth         m3",		// (OPENSWMM 5.1.911)
+		FlowUnitWords[FlowUnits]);																			// (OPENSWMM 5.1.911)
+	fprintf(Frpt.file,																						// (OPENSWMM 5.1.911)
+		"\n  ----------------------------------------------------------------------------------------");	// (OPENSWMM 5.1.911)
 
     for ( j = 0; j < Nobjects[LINK]; j++ )
     {
@@ -759,6 +759,13 @@ void writeLinkFlows()
             fprintf(Frpt.file, "  %6.2f", LinkStats[j].maxDepth / fullDepth); 
         }
         else fprintf(Frpt.file, "        ");
+
+		// --- print max volume																		  // (OPENSWMM 5.1.911)
+		if (Link[j].type == CONDUIT)																  // (OPENSWMM 5.1.911)
+			maxVolume = LinkStats[j].maxVolume * UCF(VOLUME);										  // (OPENSWMM 5.1.911)
+		else																						  // (OPENSWMM 5.1.911)
+			maxVolume = 0.0;																		  // (OPENSWMM 5.1.911)
+		fprintf(Frpt.file, "  %8.2f", maxVolume);													  // (OPENSWMM 5.1.911)
     }
     WRITE("");
 }

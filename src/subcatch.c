@@ -45,6 +45,7 @@
 #include "headers.h"
 #include "lid.h"
 #include "odesolve.h"
+#include "Seasonal.h"                                                          //(OPENSWMM 5.1.911)
 
 //-----------------------------------------------------------------------------
 // Constants 
@@ -432,6 +433,9 @@ void  subcatch_initState(int j)
         if ( Gage[i].coGage >= 0 ) Gage[Gage[i].coGage].isUsed = TRUE;
     }
 
+	// Set current subcatchment index for seasonal modeling						// (OPENSWMM 5.1.911)
+	currSub = j;																// (OPENSWMM 5.1.911)
+
     // --- initialize state of infiltration, groundwater, & snow pack objects
     if ( Subcatch[j].infil == j )  infil_initState(j, InfilModel);
     if ( Subcatch[j].groundwater ) gwater_initState(j);
@@ -666,6 +670,9 @@ double subcatch_getRunoff(int j, double tStep)
     VlidDrain = 0.0;
     VlidReturn = 0.0;
 
+	// Set current subcatchment index for seasonal modeling						// (OPENSWMM 5.1.911)
+	currSub = j;																// (OPENSWMM 5.1.911)
+
     // --- find volume of inflow to non-LID portion of subcatchment as existing
     //     ponded water + any runon volume from upstream areas;
     //     rainfall and snowmelt will be added as each sub-area is analyzed
@@ -879,7 +886,7 @@ void  subcatch_getResults(int j, double f, float x[])
     {
         z = (f1 * gw->oldFlow + f * gw->newFlow) * Subcatch[j].area * UCF(FLOW);
         x[SUBCATCH_GW_FLOW] = (float)z;
-        z = (gw->bottomElev + gw->lowerDepth) * UCF(LENGTH);                   //(5.1.012)
+		z = (gw->bottomElev + gw->lowerDepth) * UCF(LENGTH);                   //(5.1.012)
         x[SUBCATCH_GW_ELEV] = (float)z;
         z = gw->theta;
         x[SUBCATCH_SOIL_MOIST] = (float)z;
@@ -898,6 +905,9 @@ void  subcatch_getResults(int j, double f, float x[])
         else z = f1 * Subcatch[j].oldQual[p] + f * Subcatch[j].newQual[p];
         x[SUBCATCH_WASHOFF+p] = (float)z;
     }
+	// Get subcatchment water age (OPENSWMM 5.1.912)
+	if (ModelWaterAge)
+		WaterAge_getSubcatchWaterAge(j, x);
 }
 
 
@@ -1018,22 +1028,33 @@ double findSubareaRunoff(TSubarea* subarea, double tRunoff)
 //  Output:  returns runoff rate (ft/s)
 //
 {
-    double xDepth = subarea->depth - subarea->dStore;
+    double xDepth;															// (OPENSWMM 5.1.911)
     double runoff = 0.0;
+	// Check time pattern for dStore and N                      			// (OPENSWMM 5.1.911)
+	double dStore, alpha;													// (OPENSWMM 5.1.911)
+	if (SubEx[currSub].DSPat >= 0)										    // (OPENSWMM 5.1.911)
+		dStore = seasonal_getOneParam(subarea->dStore, SubEx[currSub].DSPat);// (OPENSWMM 5.1.911)
+	else																	// (OPENSWMM 5.1.911)
+		dStore = subarea->dStore;											// (OPENSWMM 5.1.911)
+	if (SubEx[currSub].NPat >= 0)											// (OPENSWMM 5.1.911)
+		alpha = seasonal_getalpha(subarea);									// (OPENSWMM 5.1.911)
+	else																	// (OPENSWMM 5.1.911)
+		alpha = subarea->alpha;												// (OPENSWMM 5.1.911)
+	xDepth = subarea->depth - dStore;										// (OPENSWMM 5.1.911)
 
     if ( xDepth > ZERO )
     {
         // --- case where nonlinear routing is used
         if ( subarea->N > 0.0 )
         {
-            runoff = subarea->alpha * pow(xDepth, MEXP);
+            runoff = alpha * pow(xDepth, MEXP);								// (OPENSWMM 5.1.911)
         }
 
         // --- case where no routing is used (Mannings N = 0)
         else
         {
             runoff = xDepth / tRunoff;
-            subarea->depth = subarea->dStore;
+            subarea->depth = dStore;										// (OPENSWMM 5.1.911)
         }
     }
     else
@@ -1056,9 +1077,20 @@ void updatePondedDepth(TSubarea* subarea, double* dt)
     double ix = subarea->inflow;       // excess inflow to subarea (ft/sec)    //(5.1.008)
     double dx;                         // depth above depression storage (ft)
     double tx = *dt;                   // time over which dx > 0 (sec)
+									   
+	// Check time pattern for dStore 													// (OPENSWMM 5.1.911)
+	double dStore, alpha;																// (OPENSWMM 5.1.911)
+	if (SubEx[currSub].DSPat >= 0)														// (OPENSWMM 5.1.911)
+		dStore = seasonal_getOneParam(subarea->dStore, SubEx[currSub].DSPat);			// (OPENSWMM 5.1.911)
+	else																				// (OPENSWMM 5.1.911)
+		dStore = subarea->dStore;														// (OPENSWMM 5.1.911)
+	if (SubEx[currSub].NPat >= 0)														// (OPENSWMM 5.1.911)
+		alpha = seasonal_getalpha(subarea);												// (OPENSWMM 5.1.911)
+	else																				// (OPENSWMM 5.1.911)
+		alpha = subarea->alpha;															// (OPENSWMM 5.1.911)
 
     // --- see if not enough inflow to fill depression storage (dStore)
-    if ( subarea->depth + ix*tx <= subarea->dStore )
+    if ( subarea->depth + ix*tx <= dStore )											  // (OPENSWMM 5.1.911)
     {
         subarea->depth += ix * tx;
     }
@@ -1067,15 +1099,15 @@ void updatePondedDepth(TSubarea* subarea, double* dt)
     else
     {
         // --- if depth < dStore then fill up dStore & reduce time step
-        dx = subarea->dStore - subarea->depth;
+        dx = dStore - subarea->depth;												 // (OPENSWMM 5.1.911)
         if ( dx > 0.0 && ix > 0.0 )
         {
             tx -= dx / ix;
-            subarea->depth = subarea->dStore;
+            subarea->depth = dStore;												// (OPENSWMM 5.1.911)
         }
 
         // --- now integrate depth over remaining time step tx
-        if ( subarea->alpha > 0.0 && tx > 0.0 )
+        if ( alpha > 0.0 && tx > 0.0 )											   // (OPENSWMM 5.1.911)
         {
             theSubarea = subarea;
             odesolve_integrate(&(subarea->depth), 1, 0, tx, ODETOL, tx,
@@ -1108,14 +1140,26 @@ void  getDdDt(double t, double* d, double* dddt)
 //
 {
     double ix = theSubarea->inflow;                                            //(5.1.008)
-    double rx = *d - theSubarea->dStore;
+	double rx;
+	// Check time pattern for dStore 													// (OPENSWMM 5.1.911)
+	double dStore, alpha;																// (OPENSWMM 5.1.911)
+	if (SubEx[currSub].DSPat >= 0)														// (OPENSWMM 5.1.911)
+		dStore = seasonal_getOneParam(theSubarea->dStore, SubEx[currSub].DSPat);		// (OPENSWMM 5.1.911)
+	else																				// (OPENSWMM 5.1.911)
+		dStore = theSubarea->dStore;													// (OPENSWMM 5.1.911)
+	if (SubEx[currSub].NPat >= 0)														// (OPENSWMM 5.1.911)
+		alpha = seasonal_getalpha(theSubarea);											// (OPENSWMM 5.1.911)
+	else																				// (OPENSWMM 5.1.911)
+		alpha = theSubarea->alpha;														// (OPENSWMM 5.1.911)
+
+	rx = *d - dStore;																	// (OPENSWMM 5.1.911)
     if ( rx < 0.0 )
     {
         rx = 0.0;
     }
     else
     {
-        rx = theSubarea->alpha * pow(rx, MEXP);
+		rx = alpha * pow(rx, MEXP);				    									// (OPENSWMM 5.1.911)
     }
     *dddt = ix - rx;
 }

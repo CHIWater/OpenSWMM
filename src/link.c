@@ -688,6 +688,9 @@ void link_getResults(int j, double f, float x[])
         c = f1*Link[j].oldQual[p] + f*Link[j].newQual[p];
         x[LINK_QUAL+p] = (float)c;
     }
+	// Get link water age (OPENSWMM 5.1.912)
+	if (ModelWaterAge)
+		WaterAge_getLinkWaterAge(j, f, f1, x);
 }
 
 //=============================================================================

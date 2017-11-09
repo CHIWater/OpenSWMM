@@ -88,7 +88,8 @@ char* OptionWords[]        = { w_FLOW_UNITS,        w_INFIL_MODEL,
                                w_MAX_TRIALS,        w_HEAD_TOL,
                                w_SYS_FLOW_TOL,      w_LAT_FLOW_TOL,
                                w_IGNORE_RDII,       w_MIN_ROUTE_STEP,          //(5.1.008)
-                               w_NUM_THREADS,       NULL};                     //(5.1.008)
+	w_NUM_THREADS,       w_Water_Age,	   //(OPENSWMM 5.1.912)
+    NULL};                     //(5.1.008)
 char* OrificeTypeWords[]   = { w_SIDE, w_BOTTOM, NULL};
 char* OutfallTypeWords[]   = { w_FREE, w_NORMAL, w_FIXED, w_TIDAL,
                                w_TIMESERIES, NULL};
@@ -134,7 +135,7 @@ char* SectWords[]          = { ws_TITLE,          ws_OPTION,
                                ws_MAP,            ws_LID_CONTROL,
                                ws_LID_USAGE,      ws_GWF,                      //(5.1.007)
                                ws_ADJUST,         ws_EVENT,                    //(5.1.011)
-                               NULL};                       
+							   ws_Seasonal,       NULL};					   // (OPENSWMM 5.1.911)
 char* SnowmeltWords[]      = { w_PLOWABLE, w_IMPERV, w_PERV, w_REMOVAL, NULL};
 char* TempKeyWords[]       = { w_TIMESERIES, w_FILE, w_WINDSPEED, w_SNOWMELT,
                                w_ADC, NULL};

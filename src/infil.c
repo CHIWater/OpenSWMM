@@ -36,6 +36,7 @@
 #include "stdlib.h"
 #include "headers.h"
 #include "infil.h"
+#include "Seasonal.h"                                                          //(OPENSWMM 5.1.911)
 
 //-----------------------------------------------------------------------------
 //  Local Variables
@@ -378,9 +379,15 @@ double horton_getInfil(THorton *infil, double tstep, double irate, double depth)
     double fmin = infil->fmin * Adjust.hydconFactor;                           //(5.1.008)
     double Fmax = infil->Fmax;
     double tp   = infil->tp;
-    double df   = f0 - fmin;                                                   //(5.1.008)
-    double kd   = infil->decay;
+	double df;// = f0 - fmin;                                                   //(5.1.008)
+	double kd;//   = infil->decay;
     double kr   = infil->regen * Evap.recoveryFactor;
+
+	// Apply seasonal pattern if any
+	f0 = seasonal_getOneParam(f0, SubEx[currSub].MaxIRPat);		           //(OPENSWMM 5.1.910.1)
+	fmin = seasonal_getOneParam(fmin, SubEx[currSub].MinIRPat);            //(OPENSWMM 5.1.910.1)
+	df = f0 - fmin; 													   //(OPENSWMM 5.1.910.1)
+	kd = seasonal_getOneParam(infil->decay, SubEx[currSub].DecayPat);  	   //(OPENSWMM 5.1.910.1)
 
     // --- special cases of no infil. or constant infil
     if ( df < 0.0 || kd < 0.0 || kr < 0.0 ) return 0.0;
@@ -487,9 +494,15 @@ double modHorton_getInfil(THorton *infil, double tstep, double irate,
     double fp, fa;
     double f0 = infil->f0 * Adjust.hydconFactor;                               //(5.1.008)
     double fmin = infil->fmin * Adjust.hydconFactor;                           //(5.1.008)
-    double df = f0 - fmin;                                                     //(5.1.008)
-    double kd = infil->decay;
+	double df;// = f0 - fmin;                                                     //(5.1.008)
+	double kd;// = infil->decay;
     double kr = infil->regen * Evap.recoveryFactor;
+
+	// Apply seasonal pattern if any
+	f0 = seasonal_getOneParam(f0, SubEx[currSub].MaxIRPat);				   //(OPENSWMM 5.1.910.1)
+	fmin = seasonal_getOneParam(fmin, SubEx[currSub].MinIRPat);			   //(OPENSWMM 5.1.910.1)
+	df = f0 - fmin; 													   //(OPENSWMM 5.1.910.1)
+	kd = seasonal_getOneParam(infil->decay, SubEx[currSub].DecayPat);  	   //(OPENSWMM 5.1.910.1)
 
     // --- special cases of no or constant infiltration
     if ( df < 0.0 || kd < 0.0 || kr < 0.0 ) return 0.0;
@@ -564,7 +577,11 @@ void grnampt_initState(TGrnAmpt *infil)
 //
 {
     if (infil == NULL) return;
-    infil->IMD = infil->IMDmax;
+	if (SubEx[currSub].IMDmaxPat >= 0)													//(OPENSWMM 5.1.911)
+		infil->IMD = seasonal_getOneParam(infil->IMDmax, SubEx[currSub].IMDmaxPat);	   	//(OPENSWMM 5.1.911)
+	else																				//(OPENSWMM 5.1.911)
+		infil->IMD = infil->IMDmax;														//(OPENSWMM 5.1.911)
+    
     infil->Fu = 0.0;                                                           //(5.1.007)
     infil->F = 0.0;
     infil->Sat = FALSE;
@@ -608,8 +625,13 @@ double grnampt_getInfil(TGrnAmpt *infil, double tstep, double irate,
 //           or a storage node.
 //
 {
+	// Apply time pattern to Ks and IMDmax if any								//(OPENSWMM 5.1.911)
+	double infilIMDmax, infilLu;												//(OPENSWMM 5.1.911)
+	infilLu = seasonal_getL(infil);												//(OPENSWMM 5.1.911)
+	infilIMDmax = seasonal_getOneParam(infil->IMDmax, SubEx[currSub].IMDmaxPat);//(OPENSWMM 5.1.911)
+
     // --- find saturated upper soil zone water volume
-    Fumax = infil->IMDmax * infil->Lu * sqrt(Adjust.hydconFactor);             //(5.1.011)
+    Fumax = infilIMDmax * infilLu * sqrt(Adjust.hydconFactor);      //(5.1.011)	//(OPENSWMM 5.1.911)
 
     // --- reduce time until next event
     infil->T -= tstep;
@@ -639,8 +661,38 @@ double grnampt_getUnsatInfil(TGrnAmpt *infil, double tstep, double irate,
 //
 {
     double ia, c1, F2, dF, Fs, kr, ts;
-    double ks = infil->Ks * Adjust.hydconFactor;                               //(5.1.008)
-    double lu = infil->Lu * sqrt(Adjust.hydconFactor);                         //(5.1.011)
+    double ks;                               //(5.1.008)
+    double lu;                         //(5.1.011)
+
+	// Apply time pattern to S, Ks and IMDmax if any								//(OPENSWMM 5.1.911)
+	double infilS, infilKs, infilIMDmax, infilLu, infilIMD;							//(OPENSWMM 5.1.911)
+	if (SubEx[currSub].SPat >= 0.0)													//(OPENSWMM 5.1.911)
+		infilS = seasonal_getOneParam(infil->S, SubEx[currSub].SPat);				//(OPENSWMM 5.1.911)
+	else																			//(OPENSWMM 5.1.911)
+		infilS = infil->S;															//(OPENSWMM 5.1.911)
+	if (SubEx[currSub].KsPat >= 0.0)												//(OPENSWMM 5.1.911)
+	{																				//(OPENSWMM 5.1.911)
+		infilKs = seasonal_getOneParam(infil->Ks, SubEx[currSub].KsPat);			//(OPENSWMM 5.1.911)
+		infilLu = seasonal_getL(infil);												//(OPENSWMM 5.1.911)
+	}																				//(OPENSWMM 5.1.911)
+	else																			//(OPENSWMM 5.1.911)
+	{																				//(OPENSWMM 5.1.911)
+		infilKs = infil->Ks;														//(OPENSWMM 5.1.911)
+		infilLu = infil->Lu;														//(OPENSWMM 5.1.911)
+	}																				//(OPENSWMM 5.1.911)
+	if (SubEx[currSub].IMDmaxPat >= 0)												//(OPENSWMM 5.1.911)
+		infilIMDmax = seasonal_getOneParam(infil->IMDmax, SubEx[currSub].IMDmaxPat);//(OPENSWMM 5.1.911)
+	else																			//(OPENSWMM 5.1.911)
+		infilIMDmax = infil->IMDmax;												//(OPENSWMM 5.1.911)
+																					//(OPENSWMM 5.1.911)
+																					// Check IMD, do not change original IMD    									//(OPENSWMM 5.1.911)
+	if (infil->IMD > infilIMDmax)													//(OPENSWMM 5.1.911)
+		infilIMD = infilIMDmax;														//(OPENSWMM 5.1.911)
+	else																			//(OPENSWMM 5.1.911)
+		infilIMD = infil->IMD;														//(OPENSWMM 5.1.911)
+
+	ks = infilKs * Adjust.hydconFactor;                               //(5.1.008)	//(OPENSWMM 5.1.911)
+	lu = infilLu * sqrt(Adjust.hydconFactor);                         //(5.1.011)	//(OPENSWMM 5.1.911)
 
     // --- get available infiltration rate (rainfall + ponded water)
     ia = irate + depth / tstep;
@@ -658,7 +710,7 @@ double grnampt_getUnsatInfil(TGrnAmpt *infil, double tstep, double irate,
         {
             infil->Fu = 0.0;
             infil->F = 0.0;
-            infil->IMD = infil->IMDmax;
+            infil->IMD = infilIMDmax;											//(OPENSWMM 5.1.911)
             return 0.0;
         }
 
@@ -690,7 +742,7 @@ double grnampt_getUnsatInfil(TGrnAmpt *infil, double tstep, double irate,
     infil->T = 5400.0 / lu / Evap.recoveryFactor;                              //(5.1.011)
 
     // --- find volume needed to saturate surface layer
-    Fs = ks * (infil->S + depth) * infil->IMD / (ia - ks);                     //(5.1.008)
+    Fs = ks * (infilS + depth) * infilIMD / (ia - ks);            //(5.1.008)	//(OPENSWMM 5.1.911)
 
     // --- surface layer already saturated
     if ( infil->F > Fs )
@@ -715,7 +767,7 @@ double grnampt_getUnsatInfil(TGrnAmpt *infil, double tstep, double irate,
     if ( ts <= 0.0 ) ts = 0.0;
 
     // --- compute new total volume infiltrated
-    c1 = (infil->S + depth) * infil->IMD;
+    c1 = (infilS + depth) * infilIMD;										//(OPENSWMM 5.1.911)
     F2 = grnampt_getF2(Fs, c1, ks, ts);                                        //(5.1.008)
     if ( F2 > Fs + ia*ts ) F2 = Fs + ia*ts;
 
@@ -747,8 +799,38 @@ double grnampt_getSatInfil(TGrnAmpt *infil, double tstep, double irate,
 //
 {
     double ia, c1, dF, F2;
-    double ks = infil->Ks * Adjust.hydconFactor;                               //(5.1.008)
-    double lu = infil->Lu * sqrt(Adjust.hydconFactor);                         //(5.1.011)
+    double ks;                               //(5.1.008)
+    double lu;                         //(5.1.011)
+
+	// Apply time pattern to S, Ks and IMDmax if any								//(OPENSWMM 5.1.911)
+	double infilS, infilKs, infilIMDmax, infilLu, infilIMD;							//(OPENSWMM 5.1.911)
+	if (SubEx[currSub].SPat >= 0.0)													//(OPENSWMM 5.1.911)
+		infilS = seasonal_getOneParam(infil->S, SubEx[currSub].SPat);				//(OPENSWMM 5.1.911)
+	else																			//(OPENSWMM 5.1.911)
+		infilS = infil->S;															//(OPENSWMM 5.1.911)
+	if (SubEx[currSub].KsPat >= 0.0)												//(OPENSWMM 5.1.911)
+	{																				//(OPENSWMM 5.1.911)
+		infilKs = seasonal_getOneParam(infil->Ks, SubEx[currSub].KsPat);			//(OPENSWMM 5.1.911)
+		infilLu = seasonal_getL(infil);												//(OPENSWMM 5.1.911)
+	}																				//(OPENSWMM 5.1.911)
+	else																			//(OPENSWMM 5.1.911)
+	{																				//(OPENSWMM 5.1.911)
+		infilKs = infil->Ks;														//(OPENSWMM 5.1.911)
+		infilLu = infil->Lu;														//(OPENSWMM 5.1.911)
+	}																				//(OPENSWMM 5.1.911)
+	if (SubEx[currSub].IMDmaxPat >= 0)												//(OPENSWMM 5.1.911)
+		infilIMDmax = seasonal_getOneParam(infil->IMDmax, SubEx[currSub].IMDmaxPat);//(OPENSWMM 5.1.911)
+	else																			//(OPENSWMM 5.1.911)
+		infilIMDmax = infil->IMDmax;												//(OPENSWMM 5.1.911)
+																					//(OPENSWMM 5.1.911)
+	// Check IMD, do not change original IMD    									//(OPENSWMM 5.1.911)
+	if (infil->IMD > infilIMDmax)													//(OPENSWMM 5.1.911)
+		infilIMD = infilIMDmax;														//(OPENSWMM 5.1.911)
+	else																			//(OPENSWMM 5.1.911)
+		infilIMD = infil->IMD;														//(OPENSWMM 5.1.911)
+
+	ks = infilKs * Adjust.hydconFactor;                               //(5.1.008)	//(OPENSWMM 5.1.911)
+	lu = infilLu * sqrt(Adjust.hydconFactor);                         //(5.1.011)	//(OPENSWMM 5.1.911)
 
     // --- get available infiltration rate (rainfall + ponded water)
     ia = irate + depth / tstep;
@@ -758,7 +840,7 @@ double grnampt_getSatInfil(TGrnAmpt *infil, double tstep, double irate,
     infil->T = 5400.0 / lu / Evap.recoveryFactor;                              //(5.1.011)
 
     // --- solve G-A equation for new cumulative infiltration volume (F2)
-    c1 = (infil->S + depth) * infil->IMD;
+    c1 = (infilS + depth) * infilIMD;											   //(OPENSWMM 5.1.911)
     F2 = grnampt_getF2(infil->F, c1, ks, tstep);                               //(5.1.008)
     dF = F2 - infil->F;
 

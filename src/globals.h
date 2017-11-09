@@ -82,6 +82,7 @@ EXTERN int
                   IgnoreGwater,             // Ignore groundwater
                   IgnoreRouting,            // Ignore flow routing
                   IgnoreQuality,            // Ignore water quality
+				  ModelWaterAge,			// Flag for model water age        //(OPENSWMM 5.1.912)
                   ErrorCode,                // Error code number
                   Warnings,                 // Number of warning messages      //(5.1.011)
                   WetStep,                  // Runoff wet time step (sec)

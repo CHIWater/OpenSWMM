@@ -104,6 +104,10 @@ int output_open()
     if ( IgnoreQuality ) NumPolluts = 0;
     else NumPolluts = Nobjects[POLLUT];
 
+	// Increase number of pollutants for modeling Water Age   (OPENSWMM 5.1.912)
+	if (ModelWaterAge)
+		NumPolluts++;
+
     // --- subcatchment results consist of Rainfall, Snowdepth, Evap, 
     //     Infil, Runoff, GW Flow, GW Elev, GW Sat, and Washoff
     NsubcatchResults = MAX_SUBCATCH_RESULTS - 1 + NumPolluts;
@@ -115,6 +119,12 @@ int output_open()
     // --- link results consist of Depth, Flow, Velocity, Froude No.,
     //     Capacity and Quality
     NlinkResults = MAX_LINK_RESULTS - 1 + NumPolluts;
+
+	// Set water age index for results for Water Age (OPENSWMM 5.1.912)
+	if (ModelWaterAge)
+	{
+		WaterAge_init(NsubcatchResults, NnodeResults, NlinkResults);
+	}
 
     // --- get number of objects reported on
     NumSubcatch = 0;
@@ -173,14 +183,32 @@ int output_open()
     {
         if ( Link[j].rptFlag ) output_saveID(Link[j].ID, Fout.file);
     }
-    for (j=0; j<NumPolluts; j++) output_saveID(Pollut[j].ID, Fout.file);
 
-    // --- save codes of pollutant concentration units
-    for (j=0; j<NumPolluts; j++)
-    {
-        k = Pollut[j].units;
-        fwrite(&k, sizeof(INT4), 1, Fout.file);
-    }
+	// Save pollutant IDs
+	for (j = 0; j < NumPolluts; j++)
+	{
+		// Check to save Water Age ID   (OPENSWMM 5.1.912)
+		if (ModelWaterAge && j == NumPolluts - 1)
+			output_saveID(WaterAgeID, Fout.file);
+		else
+			output_saveID(Pollut[j].ID, Fout.file);
+	}
+
+	// --- save codes of pollutant concentration units
+	for (j = 0; j < NumPolluts; j++)
+	{
+		// Check to save Water Age units    (OPENSWMM 5.1.912)
+		if (ModelWaterAge&& j == NumPolluts - 1)
+		{
+			k = -1;	// it is not used (it is hours)
+			fwrite(&k, sizeof(INT4), 1, Fout.file);
+		}
+		else
+		{
+			k = Pollut[j].units;
+			fwrite(&k, sizeof(INT4), 1, Fout.file);
+		}
+	}
 
     InputStartPos = ftell(Fout.file);
 

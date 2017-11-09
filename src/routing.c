@@ -237,6 +237,10 @@ void routing_execute(int routingModel, double routingStep)
         for (j=0; j<Nobjects[LINK]; j++) link_setOldQualState(j);
     }
 
+	// Replace old water age state with new state (OPENSWMM 5.1.912)
+	if (ModelWaterAge)
+		WaterAge_setOldState();
+
     // --- initialize lateral inflows at nodes
     for (j = 0; j < Nobjects[NODE]; j++)
     {
@@ -309,6 +313,10 @@ void routing_execute(int routingModel, double routingStep)
         {
             qualrout_execute(routingStep);
         }
+
+		// Route Water Age through the drainage network (OPENSWMM 5.1.912)
+		if (ModelWaterAge)
+			WaterAge_execute(routingStep);
 
         // --- remove evaporation, infiltration & outflows from system
         removeStorageLosses(routingStep);

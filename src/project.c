@@ -59,6 +59,7 @@
 #include "lid.h" 
 #include "hash.h"
 #include "mempool.h"
+#include "Seasonal.h"                                                          //(OPENSWMM 5.1.911)
 
 //-----------------------------------------------------------------------------
 //  Constants
@@ -557,6 +558,7 @@ int project_readOption(char* s1, char* s2)
       case IGNORE_GWATER:
       case IGNORE_ROUTING:
       case IGNORE_QUALITY:
+	  case WATER_AGE:					 //(OPENSWMM 5.1.912)
       case IGNORE_RDII:                                                        //(5.1.004)
         m = findmatch(s2, NoYesWords);
         if ( m < 0 ) return error_setInpError(ERR_KEYWORD, s2);
@@ -571,6 +573,7 @@ int project_readOption(char* s1, char* s2)
           case IGNORE_ROUTING:    IgnoreRouting   = m;  break;
           case IGNORE_QUALITY:    IgnoreQuality   = m;  break;
           case IGNORE_RDII:       IgnoreRDII      = m;  break;                 //(5.1.004)
+		  case WATER_AGE:		  ModelWaterAge = m; break;		 //(OPENSWMM 5.1.912)
         }
         break;
 
@@ -802,6 +805,7 @@ void setDefaults()
    IgnoreGwater    = FALSE;            // Analyze groundwater 
    IgnoreRouting   = FALSE;            // Analyze flow routing
    IgnoreQuality   = FALSE;            // Analyze water quality
+   ModelWaterAge = FALSE;			   // Model water age (OPENSWMM 5.1.912)
    WetStep         = 300;              // Runoff wet time step (secs)
    DryStep         = 3600;             // Runoff dry time step (secs)
    RouteStep       = 300.0;            // Routing time step (secs)
@@ -973,6 +977,7 @@ void createObjects()
     UnitHyd  = (TUnitHyd *)  calloc(Nobjects[UNITHYD],  sizeof(TUnitHyd));
     Snowmelt = (TSnowmelt *) calloc(Nobjects[SNOWMELT], sizeof(TSnowmelt));
     Shape    = (TShape *)    calloc(Nobjects[SHAPE],    sizeof(TShape));
+	seasonal_createObjects();												   // (OPENSWMM 5.1.911)
 
 ////  Added to release 5.1.011.  ////                                          //(5.1.011)
     // --- create array of detailed routing event periods
@@ -1232,6 +1237,7 @@ void deleteObjects()
     FREE(Snowmelt);
     FREE(Shape);
     FREE(Event);                                                               //(5.1.011)
+	FREE(SubEx);		// (OPENSWMM 5.1.911)
 }
 
 //=============================================================================

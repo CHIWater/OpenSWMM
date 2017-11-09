@@ -159,6 +159,7 @@ enum  ErrorType {
       ERR_NOT_CLOSED,           //402  101
       ERR_NOT_OPEN,             //403  102
       ERR_FILE_SIZE,            //405  103
+	  ERR_SEASONAL,				//901  104 for non-MONTHLY pattern	//(OPENSWMM 5.1.911)
 
       MAXERRMSG};
       

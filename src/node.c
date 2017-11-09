@@ -518,6 +518,9 @@ void node_getResults(int j, double f, float x[])
         z = f1*Node[j].oldQual[p] + f*Node[j].newQual[p];
         x[NODE_QUAL+p] = (float)z;
     }
+	// Get node water age (OPENSWMM 5.1.912)
+	if (ModelWaterAge)
+		WaterAge_getNodeWaterAge(j, f, f1, x);
 }
 
 //=============================================================================

@@ -43,9 +43,9 @@
 //  Leave only one of the following 3 lines un-commented,
 //  depending on the choice of compilation target
 //**********************************************************
-//#define CLE     /* Compile as a command line executable */
+#define CLE     /* Compile as a command line executable */
 //#define SOL     /* Compile as a shared object library */
-#define DLL     /* Compile as a Windows DLL */
+//#define DLL     /* Compile as a Windows DLL */
 
 // --- define WINDOWS
 #undef WINDOWS
@@ -102,6 +102,7 @@
 #include "globals.h"                   // declaration of all global variables
 
 #include "swmm5.h"                     // declaration of exportable functions
+#include "Seasonal.h"                  //(OPENSWMM 5.1.911)
                                        //   callable from other programs
 #define  MAX_EXCEPTIONS 100            // max. number of exceptions handled
 
@@ -188,7 +189,14 @@ int  main(int argc, char *argv[])
 
     // --- check for proper number of command line arguments
     start = time(0);
-    if (argc < 3) writecon(FMT01);
+	if (argc < 3)
+	{
+		inputFile =  "C:\\temp\\Reset water age.inp";
+		reportFile = "C:\\temp\\Reset water age.rpt";
+		binaryFile = "C:\\temp\\Reset water age.out";
+		swmm_run(inputFile, reportFile, binaryFile);
+		writecon(FMT01);
+	}
     else
     {
         // --- extract file names from command line arguments
@@ -590,6 +598,7 @@ int DLLEXPORT swmm_end(void)
         if ( DoRouting ) routing_close(RouteModel);
         hotstart_close();
         IsStartedFlag = FALSE;
+		seasonal_Close();		// (OPENSWMM 5.1.911)
     }
     return error_getCode(ErrorCode);                                           //(5.1.011)
 }

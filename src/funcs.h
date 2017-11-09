@@ -510,3 +510,13 @@ void     writecon(char *s);                   // writes string to console
 DateTime getDateTime(double elapsedMsec);     // convert elapsed time to date
 void     getElapsedTime(DateTime aDate,       // convert elapsed date
          int* days, int* hrs, int* mins);
+
+//-----------------------------------------------------------------------------
+// Water age modeling Methods (OPENSWMM 5.1.912)
+//-----------------------------------------------------------------------------
+void WaterAge_init(int, int, int);
+void WaterAge_setOldState(void);
+void WaterAge_execute(double tStep);
+void WaterAge_getSubcatchWaterAge(int j, float x[]);
+void WaterAge_getNodeWaterAge(int j, double f, double f1, float x[]);
+void WaterAge_getLinkWaterAge(int j, double f, double f1, float x[]);

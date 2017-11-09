@@ -29,7 +29,7 @@
 #define FMT06 "\n o  Retrieving project data"
 #define FMT07 "\n o  Writing output report"
 #define FMT08 \
-  "\n  EPA STORM WATER MANAGEMENT MODEL - VERSION 5.1 (Build 5.1.012)"         //(5.1.012)
+  "\n  OPEN STORM WATER MANAGEMENT MODEL - VERSION 5.1 (Build 5.1.912)\n\n        Modified from official EPA SWMM5.1.012 by CHI\n\n  Modifications include: water age and seasonal hydrologic modeling and conduit max. volume statistics.\n\n  When not using the new seasonal modeling capabilities, this \n  SWMM engine should produce output and report files identical \n  to EPA SWMM5.1.012, warts and all. As such, this SWMM engine \n  is provided \"as is\", without warranty of any kind, and should not be \n  construed as an endorsement or validation of the output of either \n  version. CHI accepts no liability for any direct or indirect loss \n  arising out of its use.\n\n  For more information: https://www.openswmm.org/OS51912"
 #define FMT09 \
   "\n  --------------------------------------------------------------"
 #define FMT10 "\n"
@@ -103,6 +103,7 @@
 #define  w_IGNORE_RDII       "IGNORE_RDII"                                     //(5.1.004)
 #define  w_MIN_ROUTE_STEP    "MINIMUM_STEP"                                    //(5.1.008)
 #define  w_NUM_THREADS       "THREADS"                                         //(5.1.008)
+#define  w_Water_Age         "Water_Age"	   //(OPENSWMM 5.1.912)
 
 // Flow Units
 #define  w_CFS               "CFS"
@@ -435,3 +436,5 @@
 #define  ws_GWF              "[GWF"                                            //(5.1.007)
 #define  ws_ADJUST           "[ADJUSTMENT"                                     //(5.1.007)
 #define  ws_EVENT            "[EVENT"                                          //(5.1.011)
+#define  ws_Seasonal		 "[SEASONAL_VARIATIONS"							   //(OPENSWMM 5.1.911)
+#define  WaterAgeID			 "Water_Age"   // Water age ID for output file	   //(OPENSWMM 5.1.912)
